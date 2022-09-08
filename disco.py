@@ -75,13 +75,8 @@ def cv_bandwidth(
         degree=degree
     )
     
-    # Get scorer
-    metric = metrics[criteria]
-
-    # Columns to train with
-    X = ['const'] + [col for col in ret.columns if f'{running_variable}_pow' in col]
-    X = X + [col for col in ret.columns if f'{running_variable}_treat_pow' in col]
-    ret = ret[[dependent_variable] + X].copy()
+    # Rename running variable
+    running_variable += '_pow1'
 
     # Instantiate KFold splitter
     splitter = KFold(
@@ -96,6 +91,13 @@ def cv_bandwidth(
         stop=ret[running_variable].max(),
         num=n_bandwidths*2
     )
+
+    # Columns to train with
+    X = ['const'] + [col for col in ret.columns if f'{running_variable}_pow' in col]
+    X = X + [col for col in ret.columns if f'{running_variable}_treat_pow' in col]
+    
+    # Get scorer
+    metric = metrics[criteria]
 
     # Init list to store results from each bandwidth
     h = []
@@ -128,15 +130,15 @@ def cv_bandwidth(
             l.append(
                 metric(
                     y_true=tt[dependent_variable],
-                    y_pred=m.predict(exog=tt[cols])
+                    y_pred=m.predict(exog=tt[X])
                 )
             )
     
-    # Append all {folds} MSEs
-    h.append(l)
+        # Append all {folds} MSEs
+        h.append(l)
   
     # Colum names for final DataFrame
-    cols = ['lowerBound', 'upperBound'] + [f'mse{j+1}' for j in range(folds)]
+    cols = ['lowerBound', 'upperBound'] + [f'{criteria}{j+1}' for j in range(folds)]
     ret = pd.DataFrame(data=h, columns=cols)
     ret['cvScore'] = ret.iloc[:, 2:].mean(axis=1)
 
