@@ -24,7 +24,7 @@ def prep_data(
     # Reindex data
     ret = data.reset_index(drop=True)
 
-    # Declare constant column
+    # Declare constant
     ret['const'] = 1
 
     # Recenter running variable at zero
@@ -41,8 +41,9 @@ def prep_data(
         ret[f'{running_variable}_pow{d+1}'] = ret[running_variable].pow(d+1)
         ret[f'{running_variable}_treat_pow{d+1}'] = (ret[running_variable] * ret['treat']).pow(d+1)
     
-    # Columns with _pow in their name
-    cols = [dependent_variable, 'const', 'treat'] + [col for col in ret.columns if '_pow' in col]
+    # Columns necessary for regressions
+    cols = [dependent_variable, 'const', 'treat']
+    cols = cols + [col for col in ret.columns if '_pow' in col]
 
     # Organize prepped data
     ret = ret[cols]
@@ -65,7 +66,7 @@ def cv_bandwidth(
 ):
 
     # Prep data
-    data = prep_data(
+    ret = prep_data(
         data=data,
         dependent_variable=dependent_variable,
         running_variable=running_variable,
@@ -77,6 +78,11 @@ def cv_bandwidth(
     # Get scorer
     metric = metrics[criteria]
 
+    # Columns to train with
+    X = ['const'] + [col for col in ret.columns if f'{running_variable}_pow' in col]
+    X = X + [col for col in ret.columns if f'{running_variable}_treat_pow' in col]
+    ret = ret[[dependent_variable] + X].copy()
+
     # Instantiate KFold splitter
     splitter = KFold(
         n_splits=folds,
@@ -86,14 +92,10 @@ def cv_bandwidth(
 
     # Get cuts to create bandwidths
     cuts = np.linspace(
-        start=data[running_variable].min(),
-        stop=data[running_variable].max(),
+        start=ret[running_variable].min(),
+        stop=ret[running_variable].max(),
         num=n_bandwidths*2
     )
-
-    # Columns to train with
-    cols = [dependent_variable, 'const']
-    cols = cols + [col for col in data.columns if f'{dependent_variable}_pow' in col]
 
     # Init list to store results from each bandwidth
     h = []
@@ -104,7 +106,7 @@ def cv_bandwidth(
         # Select subset within bandwidth
         lb = cuts.item(i)
         ub = cuts.item(-(i+1))
-        t = data[data[running_variable].between(lb, ub)].reset_index()
+        t = ret[ret[running_variable].between(lb, ub)].reset_index(drop=True)
 
         # Init list to store MSEs
         l = [lb, ub]
@@ -119,14 +121,14 @@ def cv_bandwidth(
             # Fit on train
             m = OLS(
                 endog=tr[dependent_variable],
-                exog=tr[running_variable]
+                exog=tr[X]
             ).fit()
 
             # Get metric on test
             l.append(
                 metric(
-                y_true=tt['y'],
-                y_pred=m.predict(exog=tt['x'])
+                    y_true=tt[dependent_variable],
+                    y_pred=m.predict(exog=tt[cols])
                 )
             )
     
