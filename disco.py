@@ -5,12 +5,13 @@ from statsmodels.api import OLS
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.model_selection import KFold
 
-# Get metric function
+# Dict to select metric function from user input
 metrics = {
-  'mse': mean_squared_error,
-  'mae': mean_absolute_error
+    'mse': mean_squared_error,
+    'mae': mean_absolute_error
 }
 
+# Function to return CV scores
 def cv_bandwidths(
     data: pd.DataFrame = None,
     running_variable: str = None,
@@ -21,64 +22,65 @@ def cv_bandwidths(
     random_state: int = None
 ):
 
-  # Get metric function
-  metric = metrics[criteria]
+    # Get scorer
+    metric = metrics[criteria]
 
-  # Init splitter
-  splitter = KFold(
-    n_splits=folds,
-    random_state=random_state,
-    shuffle=True
-  )
+    # Instantiate splitter
+    splitter = KFold(
+        n_splits=folds,
+        random_state=random_state,
+        shuffle=True
+    )
 
-  # Get cuts to create bandwidths
-  cuts = np.linspace(
-      start=data[running_variable].min(),
-      stop=data[running_variable].max(),
-      num=n_bandwidths*2
-  )
+    # Get cuts to create bandwidths
+    cuts = np.linspace(
+        start=data[running_variable].min(),
+        stop=data[running_variable].max(),
+        num=n_bandwidths*2
+    )
 
-  # Init list to store results from each bandwidth
-  h = []
+    # Init list to store results from each bandwidth
+    h = []
 
-  # Iterate over bandwidths
-  for i in range(n_bandwidths):
+    # Iterate over bandwidths
+    for i in range(n_bandwidths):
 
-    # Select subset within bandwidth
-    lb = cuts.item(i)
-    ub = cuts.item(-(i+1))
-    t = data[data[running_variable].between(lb, ub)].reset_index()
+        # Select subset within bandwidth
+        lb = cuts.item(i)
+        ub = cuts.item(-(i+1))
+        t = data[data[running_variable].between(lb, ub)].reset_index()
 
-    # Init list to store MSEs
-    l = [lb, ub]
+        # Init list to store MSEs
+        l = [lb, ub]
 
-    # Iterate over splits
-    for tr_idx, tt_idx in splitter.split(t):
+        # Iterate over splits
+        for tr_idx, tt_idx in splitter.split(t):
 
-      # Train and test from current fold
-      tr = t.iloc[tr_idx]
-      tt = t.iloc[tt_idx]
-      
-      # Fit on train
-      m = OLS(
-        endog=tr[dependent_variable],
-        exog=tr[running_variable]
-      ).fit()
+            # Train and test from current fold
+            tr = t.iloc[tr_idx]
+            tt = t.iloc[tt_idx]
+            
+            # Fit on train
+            m = OLS(
+                endog=tr[dependent_variable],
+                exog=tr[running_variable]
+            ).fit()
 
-      # Get metric on test (fold)
-      l.append(
-        metric(
-          y_true=tt['y'],
-          y_pred=m.predict(exog=tt['x'])
-        )
-      )
+            # Get metric on test
+            l.append(
+                metric(
+                y_true=tt['y'],
+                y_pred=m.predict(exog=tt['x'])
+                )
+            )
     
     # Append all {folds} MSEs
     h.append(l)
   
-  # Colum names for final DataFrame
-  cols = ['lowerBound', 'upperBound'] + [f'mse{j+1}' for j in range(folds)]
-  ret = pd.DataFrame(data=h, columns=cols)
-  ret['cvScore'] = ret.iloc[:, 2:].mean(axis=1)
+    # Colum names for final DataFrame
+    cols = ['lowerBound', 'upperBound'] + [f'mse{j+1}' for j in range(folds)]
+    ret = pd.DataFrame(data=h, columns=cols)
+    ret['cvScore'] = ret.iloc[:, 2:].mean(axis=1)
 
-  return ret
+    # Return DataFrame
+    return ret
