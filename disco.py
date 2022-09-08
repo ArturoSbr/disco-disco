@@ -51,7 +51,7 @@ def prep_data(
     return ret
 
 # Function to return CV scores
-def cv_bandwidths(
+def cv_bandwidth(
     data: pd.DataFrame = None,
     dependent_variable: str = None,
     running_variable: str = None,
@@ -77,7 +77,7 @@ def cv_bandwidths(
     # Get scorer
     metric = metrics[criteria]
 
-    # Instantiate splitter
+    # Instantiate KFold splitter
     splitter = KFold(
         n_splits=folds,
         random_state=random_state,
@@ -90,6 +90,10 @@ def cv_bandwidths(
         stop=data[running_variable].max(),
         num=n_bandwidths*2
     )
+
+    # Columns to train with
+    cols = [dependent_variable, 'const']
+    cols = cols + [col for col in data.columns if f'{dependent_variable}_pow' in col]
 
     # Init list to store results from each bandwidth
     h = []
