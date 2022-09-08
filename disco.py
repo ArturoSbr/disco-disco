@@ -55,6 +55,8 @@ def cv_bandwidths(
     data: pd.DataFrame = None,
     dependent_variable: str = None,
     running_variable: str = None,
+    cutoff: int = 0,
+    treated: str = 'right',
     degree: int = 1,
     n_bandwidths: int = 10,
     folds: int = 5,
@@ -62,6 +64,16 @@ def cv_bandwidths(
     random_state: int = None
 ):
 
+    # Prep data
+    data = prep_data(
+        data=data,
+        dependent_variable=dependent_variable,
+        running_variable=running_variable,
+        cutoff=cutoff,
+        treated=treated,
+        degree=degree
+    )
+    
     # Get scorer
     metric = metrics[criteria]
 
