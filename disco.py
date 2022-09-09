@@ -138,9 +138,6 @@ def cv_bandwidth(
         treated=treated,
         degree=degree
     )
-    
-    # Rename running variable
-    running_variable += '_pow1'
 
     # Instantiate KFold splitter
     splitter = KFold(
@@ -149,17 +146,20 @@ def cv_bandwidth(
         shuffle=True
     )
 
+    # Columns to train with
+    X = ['const', 'treat']
+    X += [col for col in ret.columns if f'{running_variable}_pow' in col]
+    X += [col for col in ret.columns if f'{running_variable}_treat_pow' in col]
+
+    # Rename running variable
+    running_variable += '_pow1'
+
     # Get cuts to create bandwidths
     cuts = np.linspace(
         start=ret[running_variable].min(),
         stop=ret[running_variable].max(),
         num=n_bandwidths*2
     )
-
-    # Columns to train with
-    X = ['const', 'treat']
-    X += [col for col in ret.columns if f'{running_variable}_pow' in col]
-    X += [col for col in ret.columns if f'{running_variable}_treat_pow' in col]
     
     # Get scorer
     metric = metrics[criteria]
@@ -202,7 +202,7 @@ def cv_bandwidth(
     
         # Append all MSEs
         h.append(l)
-  
+
     # Colum names for final DataFrame
     cols = ['lowerBound', 'upperBound', 'nObs']
     cols += [f'{criteria}{j+1}' for j in range(folds)]
