@@ -19,13 +19,12 @@ def prep_data(
     data: pd.DataFrame = None,
     dependent_variable: str = None,
     running_variable: str = None,
-    cutoff: float = 0,
+    cutoff: float = None,
     treated: str = 'above',
     degree: int = 1
 ):
     """Takes in a pandas.DataFrame object and transforms it to make it compatible
     with a sharp regression discontinuity design.
-
 
     Parameters:
     data (pandas.DataFrame): A pandas.DataFrame object that contains the dependent
@@ -38,7 +37,7 @@ def prep_data(
         Defaults to zero. This value is used to recenter the running variable around
         zero. Omit this parameter if the running variable in `data` has already been
         centered.
-    treated (str): Indicates whether observations above or below the cutoff are
+    treated (str): Indicates whether observations 'above' or 'below' the cutoff are
         assigned to treatment.
         Pass 'above' if observations whose running variable is greater or equal to
         the threshold are treated.
@@ -47,34 +46,36 @@ def prep_data(
     degree (int): Indicates the degree of the polynomial to be fitted (i.e. linear,
         quadratic, cubic, etc.).
     """
-    # Reindex data
-    ret = data.reset_index(drop=True)
+    # Copy data (keep same index)
+    ret = data.copy()
 
     # Declare constant
     ret['const'] = 1
 
     # Recenter running variable at zero
-    ret[running_variable] = ret[running_variable] - cutoff
+    if cutoff is not None:
+        ret[running_variable] = ret[running_variable] - cutoff
 
     # Declare treatment column
-    if treated == 'right':
+    if treated == 'above':
         ret['treat'] = ret[running_variable].ge(0).astype(int)
     else:
-        ret['treat'] = ret[running_variable].le(0)
+        ret['treat'] = ret[running_variable].le(0).astype(int)
 
-    # Declare powers and interactions
+    # Declare columns for powers and interactions
     for d in range(degree):
         ret[f'{running_variable}_pow{d+1}'] = ret[running_variable].pow(d+1)
         ret[f'{running_variable}_treat_pow{d+1}'] = (ret[running_variable] * ret['treat']).pow(d+1)
     
     # Columns necessary for regressions
     cols = [dependent_variable, 'const', 'treat']
-    cols = cols + [col for col in ret.columns if '_pow' in col]
+    cols = cols + [col for col in ret.columns if f'{running_variable}_pow' in col]
+    cols = cols + [col for col in ret.columns if f'{running_variable}_treat_pow' in col]
 
     # Organize prepped data
     ret = ret[cols]
 
-    # Return DataFrame
+    # Return prrocessed DataFrame
     return ret
 
 # Function to return CV scores
@@ -83,7 +84,7 @@ def cv_bandwidth(
     dependent_variable: str = None,
     running_variable: str = None,
     cutoff: int = 0,
-    treated: str = 'right',
+    treated: str = 'above',
     degree: int = 1,
     n_bandwidths: int = 10,
     folds: int = 5,
@@ -94,7 +95,6 @@ def cv_bandwidth(
     with a sharp regression discontinuity design and returns the cross-validated
     errors of the model for multiple different bandwidths.
 
-
     Parameters:
     data (pandas.DataFrame): A pandas.DataFrame object that contains the dependent
         and running variables.
@@ -106,7 +106,7 @@ def cv_bandwidth(
         Defaults to zero. This value is used to recenter the running variable around
         zero. Omit this parameter if the running variable in `data` has already been
         centered.
-    treated (str): Indicates whether observations above or below the cutoff are
+    treated (str): Indicates whether observations 'above' or 'below' the cutoff are
         assigned to treatment.
         Pass 'above' if observations whose running variable is greater or equal to
         the threshold are treated.
@@ -157,8 +157,9 @@ def cv_bandwidth(
     )
 
     # Columns to train with
-    X = ['const'] + [col for col in ret.columns if f'{running_variable}_pow' in col]
-    X = X + [col for col in ret.columns if f'{running_variable}_treat_pow' in col]
+    X = ['const', 'treat']
+    X += [col for col in ret.columns if f'{running_variable}_pow' in col]
+    X += [col for col in ret.columns if f'{running_variable}_treat_pow' in col]
     
     # Get scorer
     metric = metrics[criteria]
@@ -172,10 +173,11 @@ def cv_bandwidth(
         # Select subset within bandwidth
         lb = cuts.item(i)
         ub = cuts.item(-(i+1))
-        t = ret[ret[running_variable].between(lb, ub)].reset_index(drop=True)
+        mask = ret[running_variable].between(lb, ub)
+        t = ret[mask].reset_index(drop=True)
 
         # Init list to store MSEs
-        l = [lb, ub]
+        l = [lb, ub, mask.sum()]
 
         # Iterate over splits
         for tr_idx, tt_idx in splitter.split(t):
@@ -198,13 +200,16 @@ def cv_bandwidth(
                 )
             )
     
-        # Append all {folds} MSEs
+        # Append all MSEs
         h.append(l)
   
     # Colum names for final DataFrame
-    cols = ['lowerBound', 'upperBound'] + [f'{criteria}{j+1}' for j in range(folds)]
+    cols = ['lowerBound', 'upperBound', 'nObs']
+    cols += [f'{criteria}{j+1}' for j in range(folds)]
+
+    # CV results to DataFrame
     ret = pd.DataFrame(data=h, columns=cols)
-    ret['cvScore'] = ret.iloc[:, 2:].mean(axis=1)
+    ret['cvScore'] = ret.loc[:, f'{criteria}1':].mean(axis=1)
 
     # Return DataFrame
     return ret
