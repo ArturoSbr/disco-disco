@@ -26,25 +26,29 @@ def prep_data(
     """Takes in a pandas.DataFrame object and transforms it to make it compatible
     with a sharp regression discontinuity design.
 
-    Parameters:
-    data (pandas.DataFrame): A pandas.DataFrame object that contains the dependent
-        and running variables.
-    dependent_variable (str): The name of the dependent variable as it appears in
-        `data`.
-    running_variable (str): The name of the running variable as it appears in
-        `data`.
-    cutoff (float): The cutoff value that determines the assignment to treatment.
-        Defaults to zero. This value is used to recenter the running variable around
-        zero. Omit this parameter if the running variable in `data` has already been
-        centered.
-    treated (str): Indicates whether observations 'above' or 'below' the cutoff are
-        assigned to treatment.
-        Pass 'above' if observations whose running variable is greater or equal to
-        the threshold are treated.
-        Pass 'below' if observations whose running variable is less than or equal to
-        the threshold are treated.
-    degree (int): Indicates the degree of the polynomial to be fitted (i.e. linear,
-        quadratic, cubic, etc.).
+    `data (pandas.DataFrame)`
+        A `pandas.DataFrame` object that contains the dependent and running variables.
+
+    `dependent_variable (str)`
+        The name of the dependent variable as it appears in `data`.
+
+    `running_variable (str)`
+        The name of the running variable as it appears in `data`.
+
+    `cutoff (float)`
+        The cutoff value that determines the assignment to treatment. This value is
+        used to recenter the running variable around zero. Omit this parameter if the
+        running variable in `data` has already been centered.
+
+    `treated (str)`
+        Indicates whether observations 'above' or 'below' the cutoff are assigned to
+        treatment. Pass 'above' if observations whose running variable is greater or
+        equal to the threshold are treated. Pass 'below' if observations whose running
+        variable is less than or equal to the threshold are treated.
+
+    `degree (int)`
+        Indicates the degree of the polynomial to be fitted (i.e. linear, quadratic,
+        cubic, etc.).
     """
     # Copy data (keep same index)
     ret = data.copy()
@@ -53,7 +57,7 @@ def prep_data(
     ret['const'] = 1
 
     # Recenter running variable at zero
-    if cutoff is not None:
+    if cutoff != 0:
         ret[running_variable] = ret[running_variable] - cutoff
 
     # Declare treatment column
