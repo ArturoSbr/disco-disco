@@ -23,7 +23,7 @@ def prep_data(
     treated: str = 'above',
     degree: int = 1
 ):
-    """Takes in a pandas.DataFrame object and transforms it to make it compatible
+    """Takes in a `pandas.DataFrame` object and transforms it to make it compatible
     with a sharp regression discontinuity design.
 
     `data (pandas.DataFrame)`
