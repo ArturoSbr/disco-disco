@@ -2,13 +2,16 @@
 import numpy as np
 import pandas as pd
 from statsmodels.api import OLS
-from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
+from sklearn.metrics import mean_squared_error, mean_squared_log_error
 from sklearn.model_selection import KFold
 
 # Dict to select metric function from user input
 metrics = {
+    'mae': mean_absolute_error,
+    'mape': mean_absolute_percentage_error,
     'mse': mean_squared_error,
-    'mae': mean_absolute_error
+    'msle': mean_squared_log_error
 }
 
 # Function to prepare data
@@ -87,6 +90,44 @@ def cv_bandwidth(
     criteria: str = 'mse',
     random_state: int = None
 ):
+    """Takes in a pandas.DataFrame object, transforms it to make it compatible
+    with a sharp regression discontinuity design and returns the cross-validated
+    errors of the model for multiple different bandwidths.
+
+
+    Parameters:
+    data (pandas.DataFrame): A pandas.DataFrame object that contains the dependent
+        and running variables.
+    dependent_variable (str): The name of the dependent variable as it appears in
+        `data`.
+    running_variable (str): The name of the running variable as it appears in
+        `data`.
+    cutoff (float): The cutoff value that determines the assignment to treatment.
+        Defaults to zero. This value is used to recenter the running variable around
+        zero. Omit this parameter if the running variable in `data` has already been
+        centered.
+    treated (str): Indicates whether observations above or below the cutoff are
+        assigned to treatment.
+        Pass 'above' if observations whose running variable is greater or equal to
+        the threshold are treated.
+        Pass 'below' if observations whose running variable is less than or equal to
+        the threshold are treated.
+    degree (int): Indicates the degree of the polynomial to be fitted (i.e. linear,
+        quadratic, cubic, etc.).
+    n_bandwidths (int): The number of different bandwidths to be tested. Must be an
+        even integer. The bandwidths are calculated by taking the minimum and
+        maximum values of the recentered running variable and then making a linear
+        partition of length `n_bandwidths` in this space.
+    folds (int): The number of folds used to approximate the prediction error through
+        cross-validation. For each bandwidth, the model will be trained `folds` times,
+        and in each turn, the prediction error will be calculated on the portion of
+        the data left out for testing.
+    criteria (str): The metric used to validate the models with. Accepted values are
+        mean absolute error ('mae'), mean absolute percentage error ('mape'), mean
+        squared error ('mse') and mean squared log error (`msle`).
+    random_state (int): The seed used to instantiate the pseudo-random splitter for
+        cross-validation.
+    """
 
     # Prep data
     ret = prep_data(
