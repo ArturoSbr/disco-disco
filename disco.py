@@ -26,6 +26,7 @@ def prep_data(
     """Takes in a `pandas.DataFrame` object and transforms it to make it compatible
     with a sharp regression discontinuity design.
 
+
     `data (pandas.DataFrame)`
         A `pandas.DataFrame` object that contains the dependent and running variables.
 
@@ -41,15 +42,16 @@ def prep_data(
         running variable in `data` has already been centered.
 
     `treated (str)`
-        Indicates whether observations 'above' or 'below' the cutoff are assigned to
-        treatment. Pass 'above' if observations whose running variable is greater or
-        equal to the threshold are treated. Pass 'below' if observations whose running
+        Indicates whether observations `'above'` or `'below'` the cutoff are assigned to
+        treatment. Pass `'above'` if observations whose running variable is greater or
+        equal to the threshold are treated. Pass `'below'` if observations whose running
         variable is less than or equal to the threshold are treated.
 
     `degree (int)`
         Indicates the degree of the polynomial to be fitted (i.e. linear, quadratic,
         cubic, etc.).
     """
+    
     # Copy data (keep same index)
     ret = data.copy()
 
