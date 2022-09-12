@@ -26,7 +26,6 @@ def prep_data(
     """Takes in a `pandas.DataFrame` object and transforms it to make it compatible
     with a sharp regression discontinuity design.
 
-
     `data (pandas.DataFrame)`
         A `pandas.DataFrame` object that contains the dependent and running variables.
 
@@ -92,7 +91,8 @@ def cv_bandwidth(
     cutoff: int = 0,
     treated: str = 'above',
     degree: int = 1,
-    n_bandwidths: int = 10,
+    n_bandwidths: int = None,
+    bandwidths: list = None,
     folds: int = 5,
     criteria: str = 'mse',
     random_state: int = None
@@ -101,38 +101,57 @@ def cv_bandwidth(
     with a sharp regression discontinuity design and returns the cross-validated
     errors of the model for multiple different bandwidths.
 
-    Parameters:
-    data (pandas.DataFrame): A pandas.DataFrame object that contains the dependent
-        and running variables.
-    dependent_variable (str): The name of the dependent variable as it appears in
-        `data`.
-    running_variable (str): The name of the running variable as it appears in
-        `data`.
-    cutoff (float): The cutoff value that determines the assignment to treatment.
-        Defaults to zero. This value is used to recenter the running variable around
-        zero. Omit this parameter if the running variable in `data` has already been
-        centered.
-    treated (str): Indicates whether observations 'above' or 'below' the cutoff are
-        assigned to treatment.
-        Pass 'above' if observations whose running variable is greater or equal to
-        the threshold are treated.
-        Pass 'below' if observations whose running variable is less than or equal to
-        the threshold are treated.
-    degree (int): Indicates the degree of the polynomial to be fitted (i.e. linear,
-        quadratic, cubic, etc.).
-    n_bandwidths (int): The number of different bandwidths to be tested. Must be an
-        even integer. The bandwidths are calculated by taking the minimum and
-        maximum values of the recentered running variable and then making a linear
-        partition of length `n_bandwidths` in this space.
-    folds (int): The number of folds used to approximate the prediction error through
+    `data (pandas.DataFrame)`
+        A `pandas.DataFrame` object that contains the dependent and running variables.
+
+    `dependent_variable (str)`
+        The name of the dependent variable as it appears in `data`.
+
+    `running_variable (str)`
+        The name of the running variable as it appears in `data`.
+
+    `cutoff (float)`
+        The cutoff value that determines the assignment to treatment. This value is
+        used to recenter the running variable around zero. Omit this parameter if the
+        running variable in `data` has already been centered.
+
+    `treated (str)`
+        Indicates whether observations `'above'` or `'below'` the cutoff are assigned to
+        treatment. Pass `'above'` if observations whose running variable is greater or
+        equal to the threshold are treated. Pass `'below'` if observations whose running
+        variable is less than or equal to the threshold are treated.
+
+    `degree (int)`
+        Indicates the degree of the polynomial to be fitted (i.e. linear, quadratic,
+        cubic, etc.).
+    
+    `n_bandwidths (int)`
+        The number of bandwidths to be tested. The number of bandwidths must be even.
+        If an integer is passed, then `bandwidths` must be set to `None`. The bandwidths
+        are calculated by taking the minimum and maximum values of the recentered
+        running variable and then making a linear partition of length `n_bandwidths`
+        in this space.
+
+    `bandwidths (list)`  
+        An array-like object that determines the partitions to be tested. The length of
+        the array must be even and the array must be centered around zero. The iterative
+        process starts at the edges and ends at the center. For example, if the list
+        `[-3, -2, -1, 1, 2, 3]` is passed, the partitions are tested in the following
+        order: `(-3, 3)`, `(-2, 2)` and `(-1, 1)`.).
+
+    `folds (int)`
+        The number of folds used to approximate the prediction error through
         cross-validation. For each bandwidth, the model will be trained `folds` times,
         and in each turn, the prediction error will be calculated on the portion of
         the data left out for testing.
-    criteria (str): The metric used to validate the models with. Accepted values are
-        mean absolute error ('mae'), mean absolute percentage error ('mape'), mean
-        squared error ('mse') and mean squared log error (`msle`).
-    random_state (int): The seed used to instantiate the pseudo-random splitter for
-        cross-validation.
+
+    `criteria (str)`
+        The metric used to validate the models with. Accepted values are mean absolute
+        error (`'mae'`), mean absolute percentage error (`'mape'`), mean squared error
+        (`'mse'`) and mean squared log error (`'msle'`).
+
+    `random_state (int)`
+        The seed used to instantiate the pseudo-random splitter for cross-validation.
     """
 
     # Prep data
@@ -161,11 +180,17 @@ def cv_bandwidth(
     running_variable += '_pow1'
 
     # Get cuts to create bandwidths
-    cuts = np.linspace(
-        start=ret[running_variable].min(),
-        stop=ret[running_variable].max(),
-        num=n_bandwidths*2
-    )
+    # TO-DO: Error handling for invalid types
+    # TO-DO: Add np.ndarray support
+    if (n_bandwidths is not None) and isinstance(n_bandwidths, int):
+        cuts = np.linspace(
+            start=ret[running_variable].min(),
+            stop=ret[running_variable].max(),
+            num=n_bandwidths*2
+        )
+    elif isinstance(bandwidths, list):
+        n_bandwidths = int(len(bandwidths) / 2)
+        cuts = bandwidths
     
     # Get scorer
     metric = metrics[criteria]
