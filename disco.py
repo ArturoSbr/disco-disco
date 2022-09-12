@@ -26,27 +26,27 @@ def prep_data(
     """Takes in a `pandas.DataFrame` object and transforms it to make it compatible
     with a sharp regression discontinuity design.
 
-    `data (pandas.DataFrame)`
+    `data (pandas.DataFrame)`:
         A `pandas.DataFrame` object that contains the dependent and running variables.
 
-    `dependent_variable (str)`
+    `dependent_variable (str)`:
         The name of the dependent variable as it appears in `data`.
 
-    `running_variable (str)`
+    `running_variable (str)`:
         The name of the running variable as it appears in `data`.
 
-    `cutoff (float)`
+    `cutoff (float)`:
         The cutoff value that determines the assignment to treatment. This value is
         used to recenter the running variable around zero. Omit this parameter if the
         running variable in `data` has already been centered.
 
-    `treated (str)`
+    `treated (str)`:
         Indicates whether observations `'above'` or `'below'` the cutoff are assigned to
         treatment. Pass `'above'` if observations whose running variable is greater or
         equal to the threshold are treated. Pass `'below'` if observations whose running
         variable is less than or equal to the threshold are treated.
 
-    `degree (int)`
+    `degree (int)`:
         Indicates the degree of the polynomial to be fitted (i.e. linear, quadratic,
         cubic, etc.).
     """
@@ -101,56 +101,56 @@ def cv_bandwidth(
     with a sharp regression discontinuity design and returns the cross-validated
     errors of the model for multiple different bandwidths.
 
-    `data (pandas.DataFrame)`
+    `data (pandas.DataFrame)`:
         A `pandas.DataFrame` object that contains the dependent and running variables.
 
-    `dependent_variable (str)`
+    `dependent_variable (str)`:
         The name of the dependent variable as it appears in `data`.
 
-    `running_variable (str)`
+    `running_variable (str)`:
         The name of the running variable as it appears in `data`.
 
-    `cutoff (float)`
+    `cutoff (float)`:
         The cutoff value that determines the assignment to treatment. This value is
         used to recenter the running variable around zero. Omit this parameter if the
         running variable in `data` has already been centered.
 
-    `treated (str)`
+    `treated (str)`:
         Indicates whether observations `'above'` or `'below'` the cutoff are assigned to
         treatment. Pass `'above'` if observations whose running variable is greater or
         equal to the threshold are treated. Pass `'below'` if observations whose running
         variable is less than or equal to the threshold are treated.
 
-    `degree (int)`
+    `degree (int)`:
         Indicates the degree of the polynomial to be fitted (i.e. linear, quadratic,
         cubic, etc.).
     
-    `n_bandwidths (int)`
+    `n_bandwidths (int)`:
         The number of bandwidths to be tested. The number of bandwidths must be even.
         If an integer is passed, then `bandwidths` must be set to `None`. The bandwidths
         are calculated by taking the minimum and maximum values of the recentered
         running variable and then making a linear partition of length `n_bandwidths`
         in this space.
 
-    `bandwidths (list)`  
+    `bandwidths (list)`:
         An array-like object that determines the partitions to be tested. The length of
         the array must be even and the array must be centered around zero. The iterative
         process starts at the edges and ends at the center. For example, if the list
         `[-3, -2, -1, 1, 2, 3]` is passed, the partitions are tested in the following
         order: `(-3, 3)`, `(-2, 2)` and `(-1, 1)`.).
 
-    `folds (int)`
+    `folds (int)`:
         The number of folds used to approximate the prediction error through
         cross-validation. For each bandwidth, the model will be trained `folds` times,
         and in each turn, the prediction error will be calculated on the portion of
         the data left out for testing.
 
-    `criteria (str)`
+    `criteria (str)`:
         The metric used to validate the models with. Accepted values are mean absolute
         error (`'mae'`), mean absolute percentage error (`'mape'`), mean squared error
         (`'mse'`) and mean squared log error (`'msle'`).
 
-    `random_state (int)`
+    `random_state (int)`:
         The seed used to instantiate the pseudo-random splitter for cross-validation.
     """
 
