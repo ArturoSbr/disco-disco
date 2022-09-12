@@ -181,7 +181,6 @@ def cv_bandwidth(
 
     # Get cuts to create bandwidths
     # TO-DO: Error handling for invalid types
-    # TO-DO: Add np.ndarray support
     if (n_bandwidths is not None) and isinstance(n_bandwidths, int):
         cuts = np.linspace(
             start=ret[running_variable].min(),
@@ -189,6 +188,9 @@ def cv_bandwidth(
             num=n_bandwidths*2
         )
     elif isinstance(bandwidths, list):
+        n_bandwidths = int(len(bandwidths) / 2)
+        cuts = np.array(bandwidths)
+    elif isinstance(bandwidths, np.ndarray):
         n_bandwidths = int(len(bandwidths) / 2)
         cuts = bandwidths
     
