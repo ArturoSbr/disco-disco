@@ -180,8 +180,8 @@ def cv_bandwidth(
     running_variable += '_pow1'
 
     # Get cuts to create bandwidths
-    # TO-DO: Error handling for invalid types
-    if (n_bandwidths is not None) and isinstance(n_bandwidths, int):
+    # TO-DO: Error handling for multiple args (n_band. & band.)
+    if isinstance(n_bandwidths, int):
         cuts = np.linspace(
             start=ret[running_variable].min(),
             stop=ret[running_variable].max(),
